@@ -1,0 +1,1 @@
+exports.SwaggerService = require('./SwaggerService')

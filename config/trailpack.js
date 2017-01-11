@@ -5,6 +5,19 @@
  */
 module.exports = {
   type: 'misc',
+
+  /**
+   * Define the API resources are provided by this trailpack
+   */
+  provides: {
+    api: {
+      controllers: [ 'SwaggerController' ],
+      services: [ 'SwaggerService' ]
+      // ...
+    },
+    config: [ ]
+  },
+
   /**
    * Configure the lifecycle of this pack; that is, how it boots up, and which
    * order it loads relative to other trailpacks.
@@ -28,4 +41,3 @@ module.exports = {
     }
   }
 }
-
