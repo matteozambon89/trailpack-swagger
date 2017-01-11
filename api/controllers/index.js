@@ -1,0 +1,1 @@
+exports.SwaggerController = require('./SwaggerController')
