@@ -1,6 +1,6 @@
 {
   "name": "trailpack-swagger",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Use Swagger UI in your Trails project",
   "homepage": "https://github.com/matteozambon89/trailpack-swagger",
   "author": {
@@ -23,18 +23,18 @@
     "i": "^0.3.5",
     "object-path": "^0.11.3",
     "pluralize": "^3.1.0",
-    "trailpack": "latest",
-    "trails-controller": "^1.0.0-beta-2",
-    "trails-service": "^1.0.0-beta-2"
+    "trailpack": "^2.1.0",
+    "trails-controller": "^2.0.0",
+    "trails-service": "^2.0.0"
   },
   "devDependencies": {
-    "lodash": "^4.11.1",
-    "trails": "latest",
     "eslint": "^2.4",
     "eslint-config-trails": "^1.0.4",
+    "lodash": "^4.11.1",
     "mocha": "^2.4.5",
     "smokesignals": "^1.0.9",
-    "trailpack-core": "^1.0.0-beta-6"
+    "trailpack-core": "^2.0.0",
+    "trails": "latest"
   },
   "scripts": {
     "test": "eslint . && mocha"
