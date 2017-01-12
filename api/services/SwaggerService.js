@@ -11,6 +11,9 @@ let modelRelations = {}
 let modelPopulates = {}
 let cachedModels = {}
 
+let standardBasePath = ''
+let passportBasePath = ''
+
 /**
  * @module SwaggerService
  * @description Service to generate Swagger documentation
@@ -92,7 +95,7 @@ module.exports = class SwaggerService extends Service {
 
           switch (directiveAfter) {
           case 'int':
-            example = parseInt(example)
+            example = parseInt(example, 10)
             break
           }
         }
@@ -210,6 +213,48 @@ module.exports = class SwaggerService extends Service {
       return config.swagger.basePath
     }
     else if (config.footprints && config.footprints.prefix) {
+      if (config.passport && config.passport.prefix) {
+        if (config.footprints.prefix !== config.passport.prefix) {
+          const footprintsPrefix = config.footprints.prefix.toLowerCase()
+          const passportPrefix = config.passport.prefix.toLowerCase()
+
+          standardBasePath = ''
+          passportBasePath = ''
+
+          let basePath = []
+
+          let path1 = footprintsPrefix.length < passportPrefix.length ? footprintsPrefix : passportPrefix
+          let path2 = footprintsPrefix.length > passportPrefix.length ? footprintsPrefix : passportPrefix
+
+          path1 = path1.split('/')
+          path2 = path2.split('/')
+
+          for (const p in path1) {
+            if (path1[p] === path2[p]) {
+              basePath.push(path1[p])
+            }
+            else {
+              break
+            }
+          }
+
+          basePath = basePath.join('/')
+
+          const regExp = new RegExp('^' + basePath)
+
+          standardBasePath = footprintsPrefix.replace(regExp, '')
+          passportBasePath = passportPrefix.replace(regExp, '')
+
+          basePath = (!basePath.match(/^\//) ? '/' : '') + basePath
+          standardBasePath = (!standardBasePath.match(/^\//) ? '/' : '') + standardBasePath
+          passportBasePath = (!passportBasePath.match(/^\//) ? '/' : '') + passportBasePath
+          standardBasePath = standardBasePath.replace(/\/$/, '')
+          passportBasePath = passportBasePath.replace(/\/$/, '')
+
+          return basePath
+        }
+      }
+
       return config.footprints.prefix
     }
     else {
@@ -254,7 +299,7 @@ module.exports = class SwaggerService extends Service {
       return config.web.host + ':' + this.getPort(config)
     }
     else {
-      return '0.0.0.0' + ':' + this.getPort(config)
+      return '0.0.0.0:' + this.getPort(config)
     }
   }
 
@@ -304,12 +349,6 @@ module.exports = class SwaggerService extends Service {
       tags.push({
         'name': 'Auth'
       })
-      tags.push({
-        'name': 'JWT'
-      })
-      tags.push({
-        'name': 'Passport'
-      })
     }
 
     for (const modelName in this.app.api.models) {
@@ -325,6 +364,194 @@ module.exports = class SwaggerService extends Service {
     return tags
   }
 
+  getModelNameFromModelMap(modelName) {
+    const modelNames = modelMap.filter((el) => {
+      if (el.toLowerCase() === modelName.toLowerCase()) {
+        return el
+      }
+    })
+
+    if (modelNames.length > 0) {
+      return modelNames[0]
+    }
+
+    return 'x-any'
+  }
+
+  parseDefinitionModelProperty(property) {
+    property.type = property.type.toLowerCase()
+
+    if (property.type === 'integer') {
+      property.type = 'integer'
+      property.format = 'int32'
+    }
+    else if (property.type === 'long') {
+      property.type = 'integer'
+      property.format = 'int64'
+    }
+    else if (property.type === 'float') {
+      property.type = 'number'
+      property.format = 'float'
+    }
+    else if (property.type === 'double') {
+      property.type = 'number'
+      property.format = 'double'
+    }
+    else if (property.type === 'byte') {
+      property.type = 'string'
+      property.format = 'byte'
+    }
+    else if (property.type === 'binary') {
+      property.type = 'string'
+      property.format = 'binary'
+    }
+    else if (property.type === 'date') {
+      property.type = 'string'
+      property.format = 'date'
+    }
+    else if (property.type === 'dateTime' || property.type === 'time') {
+      property.type = 'string'
+      property.format = 'date-time'
+    }
+    else if (property.type === 'password') {
+      property.type = 'string'
+      property.format = 'password'
+    }
+    else if (property.type === 'json') {
+      property.type = 'object'
+    }
+    else if (property.type === 'array' && (!property.items)) {
+      property.items = {
+        '$ref': '#/definitions/x-any'
+      }
+    }
+    else if (!property.type.match(/^object$|^array$|^number$/)) {
+      property.format = property.type
+      property.type = 'string'
+    }
+
+    return property
+  }
+
+  getDefinitionModel(config, doc, models, modelName) {
+    modelRelations[modelName] = []
+    modelPopulates[modelName] = []
+
+    // Get Models
+    const model = models[modelName]
+    // Get Schema
+    const modelProperties = model.schema(this.app)
+    // Get Description
+    const modelDescription = model.description ? model.description() : {}
+
+    // Swagger Definition
+    const swaggerDefinition = {
+      type: 'object',
+      required: [],
+      description: modelDescription.model || (inflect.titleize(modelName) + ' object'),
+      properties: null
+    }
+
+    for (const propertyName in modelProperties) {
+      const property = modelProperties[propertyName]
+
+      let prop = {}
+
+      // Description
+      prop.description = modelName + ' ' + inflect.titleize(propertyName)
+      if (modelDescription.schema) {
+        prop.description = modelDescription.schema[propertyName] || prop.description
+      }
+
+      // Required
+      if (property.required) {
+        swaggerDefinition.required.push(propertyName)
+      }
+
+      // Default
+      if (property.defaultTo) {
+        if (typeof property.defaultTo !== 'function') {
+          prop.default = property.defaultTo
+        }
+      }
+
+      // Has Many
+      if (property.collection && !property.through) {
+        const collectionFilter = this.getModelNameFromModelMap(property.collection)
+
+        prop['type'] = 'array'
+        prop['items'] = {
+          '$ref': '#/definitions/' + inflect.camelize(collectionFilter)
+        }
+
+        // Add to Relations
+        modelRelations[modelName].push({
+          property: propertyName,
+          model: collectionFilter,
+          type: 'hasMany'
+        })
+
+        // Add to Populate
+        modelPopulates[modelName].push(propertyName)
+      }
+      // Has Many Through
+      else if (property.collection && property.through) {
+        const throughFilter = this.getModelNameFromModelMap(property.through)
+
+        prop['type'] = 'array'
+        prop['items'] = {
+          '$ref': '#/definitions/' + inflect.camelize(throughFilter)
+        }
+
+        // Add to Relations
+        modelRelations[modelName].push({
+          property: propertyName,
+          model: throughFilter,
+          type: 'hasManyThrough'
+        })
+
+        // Add to Populate
+        modelPopulates[modelName].push(propertyName)
+      }
+      // Has One / Belongs To
+      else if (property.model) {
+        const modelFilter = this.getModelNameFromModelMap(property.model)
+
+        prop['type'] = 'object'
+        prop['$ref'] = '#/definitions/' + inflect.camelize(modelFilter)
+
+        // Add to Relations
+        modelRelations[modelName].push({
+          'property': propertyName,
+          'model': modelFilter,
+          'type': 'hasOne'
+        })
+
+        // Add to Populate
+        modelPopulates[modelName].push(propertyName)
+      }
+      else if (Array.isArray(property.type)) {
+        prop.type = 'array'
+      }
+      else {
+        prop.type = property.type
+      }
+
+      prop = this.parseDefinitionModelProperty(prop)
+
+      modelProperties[propertyName] = prop
+    }
+
+    // Add Formatted Properties to Swagger Definition
+    swaggerDefinition.properties = modelProperties
+
+    if (swaggerDefinition.required.length === 0) {
+      swaggerDefinition.required = undefined
+    }
+
+    return swaggerDefinition
+  }
+
   getDefinitions(config, doc) {
     const definitions = {}
 
@@ -335,184 +562,55 @@ module.exports = class SwaggerService extends Service {
     const models = this.app.api.models
 
     for (const modelName in models) {
-      modelRelations[modelName] = []
-      modelPopulates[modelName] = []
+      // Add Definition to SwaggerJson
+      definitions[modelName] = this.getDefinitionModel(config, doc, models, modelName)
 
-      // Get Models
-      const model = models[modelName]
-      // Get Schema
-      const modelProperties = model.schema(this.app)
-      // Get Description
-      const modelDescription = model.description ? model.description() : {}
+      if (modelName === 'User' && config.passport && config.passport.strategies && config.passport.strategies.local) {
+        const localStrategy = config.passport.strategies.local
+        let usernameField = 'username'
 
-      // Swagger Definition
-      const swaggerDefinition = {
-        type: 'object',
-        required: [],
-        description: modelDescription.model || (inflect.titleize(modelName) + ' object'),
-        properties: null
-      }
-
-      for (const propertyName in modelProperties) {
-        const property = modelProperties[propertyName]
-
-        const prop = {}
-
-        // Description
-        prop.description = modelName + ' ' + inflect.titleize(propertyName)
-        if (modelDescription.schema) {
-          prop.description = modelDescription.schema[propertyName] || prop.description
+        if (localStrategy.options && localStrategy.options.usernameField) {
+          usernameField = localStrategy.options.usernameField
         }
 
-        // Required
-        if (property.required) {
-          swaggerDefinition.required.push(propertyName)
+        const passportModelProperties = {}
+        passportModelProperties[usernameField] = {
+          type: 'string'
+        }
+        passportModelProperties['password'] = {
+          type: 'string',
+          format: 'password'
         }
 
-        // Default
-        if (property.defaultTo) {
-          if (typeof property.defaultTo !== 'function') {
-            prop.default = property.defaultTo
-          }
+        // Swagger Definition
+        definitions['UserLogin'] = {
+          type: 'object',
+          required: [
+            usernameField,
+            'password'
+          ],
+          description: 'User credentials',
+          properties: passportModelProperties
         }
 
-        // Has Many
-        if (property.collection && !property.through) {
-          const collectionFilter = modelMap.filter((el) => {
-            if (el.toLowerCase() === property.collection.toLowerCase()) {
-              return el
-            }
-          })[0]
-
-          prop['type'] = 'array'
-          prop['items'] = {
-            '$ref': '#/definitions/' + inflect.camelize(collectionFilter)
-          }
-
-          // Add to Relations
-          modelRelations[modelName].push({
-            property: propertyName,
-            model: collectionFilter,
-            type: 'hasMany'
-          })
-
-          // Add to Populate
-          modelPopulates[modelName].push(propertyName)
-        }
-        // Has Many Through
-        else if (property.collection && property.through) {
-          const throughFilter = modelMap.filter((el) => {
-            if (el.toLowerCase() === property.through.toLowerCase()) {
-              return el
-            }
-          })[0]
-
-          prop['type'] = 'array'
-          prop['items'] = {
-            '$ref': '#/definitions/' + inflect.camelize(throughFilter)
-          }
-
-          // Add to Relations
-          modelRelations[modelName].push({
-            property: propertyName,
-            model: throughFilter,
-            type: 'hasManyThrough'
-          })
-
-          // Add to Populate
-          modelPopulates[modelName].push(propertyName)
-        }
-        // Has One / Belongs To
-        else if (property.model) {
-          const modelFilter = modelMap.filter((el) => {
-            if (el.toLowerCase() === property.model.toLowerCase()) {
-              return el
-            }
-          })[0]
-
-          prop['type'] = 'object'
-          prop['$ref'] = '#/definitions/' + inflect.camelize(modelFilter)
-
-          // Add to Relations
-          modelRelations[modelName].push({
-            'property': propertyName,
-            'model': modelFilter,
-            'type': 'hasOne'
-          })
-
-          // Add to Populate
-          modelPopulates[modelName].push(propertyName)
-        }
-        else if (Array.isArray(property.type)) {
-          prop.type = 'array'
+        definitions['UserRegister'] = definitions[modelName]
+        if (definitions['UserRegister'].required) {
+          definitions['UserRegister'].required.push('password')
         }
         else {
-          prop.type = property.type
+          definitions['UserRegister'].required = [
+            usernameField,
+            'password'
+          ]
         }
-
-        prop.type = prop.type.toLowerCase()
-
-        if (prop.type === 'integer') {
-          prop.type = 'integer'
-          prop.type = 'int32'
-        }
-        else if (prop.type === 'long') {
-          prop.type = 'integer'
-          prop.type = 'int64'
-        }
-        else if (prop.type === 'float') {
-          prop.type = 'number'
-          prop.type = 'float'
-        }
-        else if (prop.type === 'double') {
-          prop.type = 'number'
-          prop.format = 'double'
-        }
-        else if (prop.type === 'byte') {
-          prop.type = 'string'
-          prop.format = 'byte'
-        }
-        else if (prop.type === 'binary') {
-          prop.type = 'string'
-          prop.format = 'binary'
-        }
-        else if (prop.type === 'date') {
-          prop.type = 'string'
-          prop.format = 'date'
-        }
-        else if (prop.type === 'dateTime' || prop.type === 'time') {
-          prop.type = 'string'
-          prop.format = 'date-time'
-        }
-        else if (prop.type === 'password') {
-          prop.type = 'string'
-          prop.format = 'password'
-        }
-        else if (prop.type === 'json') {
-          prop.type = 'object'
-        }
-        else if (prop.type === 'array' && (!prop.items)) {
-          prop.items = {
-            '$ref': '#/definitions/x-any'
-          }
-        }
-        else if (!prop.type.match(/^object$|^array$|^number$/)) {
-          prop.format = prop.type
-          prop.type = 'string'
-        }
-
-        modelProperties[propertyName] = prop
+        definitions['UserRegister'].properties['password'] = passportModelProperties['password']
       }
+    }
 
-      // Add Formatted Properties to Swagger Definition
-      swaggerDefinition.properties = modelProperties
+    const responses = this.getResponses(config, doc)
 
-      if (swaggerDefinition.required.length === 0) {
-        swaggerDefinition.required = undefined
-      }
-
-      // Add Definition to SwaggerJson
-      definitions[modelName] = swaggerDefinition
+    for (const responseName in responses) {
+      definitions[responseName] = responses[responseName]
     }
 
     return definitions
@@ -527,46 +625,81 @@ module.exports = class SwaggerService extends Service {
 
       if (this.app.api.models[responseName]) {
         responseObject.schema = {
-          'type': 'object',
+          type: 'object',
           '$ref': '#/definitions/' + responseName
         }
+
+        /** Try example
+        const produces = this.getProduces(this.app.config)
+        const model = this.app.api.models[responseName]
+        const definitionExample = this.getModelExample(model, true)
+
+        if (definitionExample) {
+          responseObject.examples = {}
+          for (const produceIndex in produces) {
+            const produce = produces[produceIndex]
+
+            responseObject.examples[produce] = definitionExample
+          }
+        }
+        */
       }
       else if (this.app.api.models[inflect.singularize(responseName)]) {
         responseObject.schema = {
-          'type': 'array',
-          'items': {
+          type: 'array',
+          items: {
             '$ref': '#/definitions/' + inflect.singularize(responseName)
           }
         }
+
+        /** Try example
+        const produces = this.getProduces(this.app.config)
+        const model = this.app.api.models[inflect.singularize(responseName)]
+        const definitionExample = this.getModelExample(model, true)
+
+        if (definitionExample) {
+          responseObject.examples = {}
+          for (const produceIndex in produces) {
+            const produce = produces[produceIndex]
+
+            responseObject.examples[produce] = definitionExample
+          }
+        }
+        */
       }
       else {
         responseObject.schema = {
-          '$ref': '#/responses/' + (responseName || 'x-GenericSuccess')
+          type: 'object',
+          '$ref': '#/definitions/' + (responseName || 'x-GenericSuccess')
         }
       }
       break
     case '400':
       responseObject.description = description || 'Bad Request'
       responseObject.schema = {
-        '$ref': '#/responses/' + (responseName || 'BadRequest')
+        type: 'object',
+        '$ref': '#/definitions/' + (responseName || 'BadRequest')
       }
       break
     case '401':
       responseObject.description = description || 'Unauthorized'
       responseObject.schema = {
-        '$ref': '#/responses/' + (responseName || 'Unauthorized')
+        type: 'object',
+        '$ref': '#/definitions/' + (responseName || 'Unauthorized')
       }
       break
     case '404':
       responseObject.description = description || 'Not Found'
       responseObject.schema = {
-        '$ref': '#/responses/' + (responseName || 'NotFound')
+        type: 'object',
+        '$ref': '#/definitions/' + (responseName || 'NotFound')
       }
       break
     case '500':
       responseObject.description = description || 'Unexpected Error'
       responseObject.schema = {
-        '$ref': '#/responses/' + (responseName || 'UnexpectedError')
+        type: 'object',
+        '$ref': '#/definitions/' + (responseName || 'UnexpectedError')
       }
       break
     }
@@ -574,36 +707,64 @@ module.exports = class SwaggerService extends Service {
     return responseObject
   }
 
-  getResponses(config, doc) {
-    let responses = {}
+  genResponseObjects(directives) {
+    const responses = {}
 
-    responses['x-GenericSuccess'] = {
-      'properties': {}
+    for (const directiveIndex in directives) {
+      const directive = directives[directiveIndex]
+
+      const httpCode = directive[0] || '200'
+      const responseName = directive[1] || undefined
+      const description = directive[2] || undefined
+
+      const response = this.genResponseObject(httpCode, responseName, description)
+
+      responses[httpCode] = response
     }
 
-    if (config.passport) {
-      for (const authType in config.passport) {
+    return responses
+  }
+
+  genResponseObjectModel(modelName, isPlural){
+    return this.genResponseObjects([
+      ['200', isPlural ? inflect.pluralize(modelName) : modelName],
+      ['400'],
+      ['401'],
+      ['404'],
+      ['500']
+    ])
+  }
+
+  getResponses(config, doc) {
+    const responses = {}
+
+    responses['x-GenericSuccess'] = {
+      description: 'Generic Successful Response',
+      properties: {}
+    }
+
+    if (config.passport && config.passport.strategies) {
+      for (const authType in config.passport.strategies) {
         switch (authType) {
         case 'local':
 
           responses['PassportLocalSuccess'] = {
-            'required': [
+            description: 'Successful Response',
+            required: [
               'redirect',
               'user',
               'token'
             ],
-            'properties': {
-              'redirect': {
-                'type': 'string'
+            properties: {
+              redirect: {
+                type: 'string'
               },
-              'user': {
-                'type': 'object',
-                'schema': {
-                  '$ref': '#/definitions/User'
-                }
+              user: {
+                type: 'object',
+                '$ref': '#/definitions/User'
               },
-              'token': {
-                'type': 'string'
+              token: {
+                type: 'string'
               }
             }
           }
@@ -614,48 +775,52 @@ module.exports = class SwaggerService extends Service {
     }
 
     responses.BadRequest = {
-      'required': [
+      description: 'Bad Request',
+      required: [
         'error'
       ],
-      'properties': {
+      properties: {
         'error': {
           'type': 'string'
         }
       }
     }
     responses.Unauthorized = {
-      'required': [
+      description: 'Unauthorized',
+      required: [
         'error'
       ],
-      'properties': {
+      properties: {
         'error': {
           'type': 'string'
         }
       }
     }
     responses.NotFound = {
-      'required': [
+      description: 'Not Found',
+      required: [
         'error'
       ],
-      'properties': {
+      properties: {
         'error': {
           'type': 'string'
         }
       }
     }
     responses.UnexpectedError = {
-      'required': [
+      description: 'Unexpected Error',
+      required: [
         'error',
         'status',
         'summary'
       ],
-      'properties': {
+      properties: {
         'error': {
           'type': 'string'
         },
         'status': {
           'type': 'integer',
-          'format': 'int'
+          'format': 'int32'
         },
         'summary': {
           'type': 'string'
@@ -716,7 +881,7 @@ module.exports = class SwaggerService extends Service {
     let usernameField = 'username'
 
     if (localStrategy.options && localStrategy.options.usernameField) {
-      usernameField = localStrategy.options
+      usernameField = localStrategy.options.usernameField
     }
 
     pathItem.post = {}
@@ -724,8 +889,6 @@ module.exports = class SwaggerService extends Service {
     pathItem.post.operationId = 'auth.localRegister'
     pathItem.post.tags = [
       'Auth',
-      'JWT',
-      'Passport',
       'User'
     ]
     pathItem.post.parameters = [
@@ -736,16 +899,16 @@ module.exports = class SwaggerService extends Service {
         required: true,
         schema: {
           description: 'User object including password',
-          '$ref': '#/definitions/User'
+          '$ref': '#/definitions/UserRegister'
         }
       }
     ]
-    pathItem.post.responses = {
-      '200': this.genResponseObject('200', 'PassportLocalSuccess'),
-      '400': this.genResponseObject('400')
-    }
+    pathItem.post.responses = this.genResponseObjects([
+      ['200', 'PassportLocalSuccess'],
+      ['400']
+    ])
 
-    paths['/auth/local/register'] = pathItem
+    paths[passportBasePath + '/auth/local/register'] = pathItem
 
     return paths
   }
@@ -757,15 +920,7 @@ module.exports = class SwaggerService extends Service {
     let usernameField = 'username'
 
     if (localStrategy.options && localStrategy.options.usernameField) {
-      usernameField = localStrategy.options
-    }
-
-    const postParametersSchemaParameters = {}
-    postParametersSchemaParameters[usernameField] = {
-      type: 'string'
-    }
-    postParametersSchemaParameters['password'] = {
-      type: 'password'
+      usernameField = localStrategy.options.usernameField
     }
 
     pathItem.post = {}
@@ -773,8 +928,6 @@ module.exports = class SwaggerService extends Service {
     pathItem.post.operationId = 'auth.localLogin'
     pathItem.post.tags = [
       'Auth',
-      'JWT',
-      'Passport',
       'User'
     ]
     pathItem.post.parameters = [
@@ -784,22 +937,14 @@ module.exports = class SwaggerService extends Service {
         description: 'Login credentials',
         required: true,
         schema: {
-          type: 'object',
           description: 'User object including password',
-          required: [
-            usernameField,
-            'password'
-          ],
-          parameters: postParametersSchemaParameters
+          '$ref': '#/definitions/UserLogin'
         }
       }
     ]
-    pathItem.post.responses = {
-      '200': this.genResponseObject('200', 'PassportLocalSuccess'),
-      '400': this.genResponseObject('400')
-    }
+    pathItem.post.responses = this.genResponseObjectModel('PassportLocalSuccess')
 
-    paths['/auth/local'] = pathItem
+    paths[passportBasePath + '/auth/local'] = pathItem
 
     return paths
   }
@@ -812,8 +957,6 @@ module.exports = class SwaggerService extends Service {
     pathItem.get.operationId = 'auth.localLogout'
     pathItem.get.tags = [
       'Auth',
-      'JWT',
-      'Passport',
       'User'
     ]
     pathItem.get.parameters = []
@@ -822,12 +965,12 @@ module.exports = class SwaggerService extends Service {
         jwt: []
       }
     ]
-    pathItem.get.responses = {
-      '200': this.genResponseObject('200', 'PassportLocalSuccess'),
-      '401': this.genResponseObject('401')
-    }
+    pathItem.get.responses = this.genResponseObjects([
+      ['200', 'PassportLocalSuccess'],
+      ['401']
+    ])
 
-    paths['/auth/local/logout'] = pathItem
+    paths[passportBasePath + '/auth/local/logout'] = pathItem
 
     return paths
   }
@@ -914,7 +1057,7 @@ module.exports = class SwaggerService extends Service {
 
   getPathModel(paths, config, doc, modelName) {
     const pathItem = {}
-    const pathId = '/' + modelName.toLowerCase()
+    const pathId = standardBasePath + '/' + modelName.toLowerCase()
 
     pathItem.get = {}
     pathItem.get.summary = 'List all ' + inflect.titleize(inflect.pluralize(modelName))
@@ -938,8 +1081,8 @@ module.exports = class SwaggerService extends Service {
       in: 'query',
       description: 'Pagination size',
       required: false,
-      type: 'number',
-      format: 'int',
+      type: 'integer',
+      format: 'int32',
       default: this.getPathDefaultLimit(config)
     })
     pathItem.get.parameters.push({
@@ -947,16 +1090,11 @@ module.exports = class SwaggerService extends Service {
       in: 'query',
       description: 'Pagination cusrsor',
       required: false,
-      type: 'number',
-      format: 'int',
+      type: 'integer',
+      format: 'int32',
       default: 0
     })
-    pathItem.get.responses = {}
-    pathItem.get.responses['200'] = this.genResponseObject('200', inflect.pluralize(modelName))
-    pathItem.get.responses['400'] = this.genResponseObject('400')
-    pathItem.get.responses['401'] = this.genResponseObject('401')
-    pathItem.get.responses['404'] = this.genResponseObject('404')
-    pathItem.get.responses['500'] = this.genResponseObject('500')
+    pathItem.get.responses = this.genResponseObjectModel(modelName, true)
     pathItem.get.security = this.getPathSecurity(doc, modelName)
 
     pathItem.post = {}
@@ -976,12 +1114,7 @@ module.exports = class SwaggerService extends Service {
         '$ref': '#/definitions/' + modelName
       }
     })
-    pathItem.post.responses = {}
-    pathItem.post.responses['200'] = this.genResponseObject('200', modelName)
-    pathItem.post.responses['400'] = this.genResponseObject('400')
-    pathItem.post.responses['401'] = this.genResponseObject('401')
-    pathItem.post.responses['404'] = this.genResponseObject('404')
-    pathItem.post.responses['500'] = this.genResponseObject('500')
+    pathItem.post.responses = this.genResponseObjectModel(modelName)
     pathItem.post.security = this.getPathSecurity(doc, modelName)
 
     pathItem.put = {}
@@ -1001,12 +1134,7 @@ module.exports = class SwaggerService extends Service {
         '$ref': '#/definitions/' + modelName
       }
     })
-    pathItem.put.responses = {}
-    pathItem.put.responses['200'] = this.genResponseObject('200', modelName)
-    pathItem.put.responses['400'] = this.genResponseObject('400')
-    pathItem.put.responses['401'] = this.genResponseObject('401')
-    pathItem.put.responses['404'] = this.genResponseObject('404')
-    pathItem.put.responses['500'] = this.genResponseObject('500')
+    pathItem.put.responses = this.genResponseObjectModel(modelName)
     pathItem.put.security = this.getPathSecurity(doc, modelName)
 
     pathItem.delete = {}
@@ -1016,12 +1144,7 @@ module.exports = class SwaggerService extends Service {
       modelName
     ]
     pathItem.delete.parameters = this.getModelCriteria(config, doc, modelName, true)
-    pathItem.delete.responses = {}
-    pathItem.delete.responses['200'] = this.genResponseObject('200', modelName)
-    pathItem.delete.responses['400'] = this.genResponseObject('400')
-    pathItem.delete.responses['401'] = this.genResponseObject('401')
-    pathItem.delete.responses['404'] = this.genResponseObject('404')
-    pathItem.delete.responses['500'] = this.genResponseObject('500')
+    pathItem.delete.responses = this.genResponseObjectModel(modelName)
     pathItem.delete.security = this.getPathSecurity(doc, modelName)
 
     paths[pathId] = pathItem
@@ -1030,7 +1153,7 @@ module.exports = class SwaggerService extends Service {
 
   getPathModelById(paths, config, doc, modelName) {
     const pathItem = {}
-    const pathId = '/' + modelName.toLowerCase() + '/{id}'
+    const pathId = standardBasePath + '/' + modelName.toLowerCase() + '/{id}'
 
     pathItem.get = {}
     pathItem.get.summary = 'Get a ' + inflect.titleize(modelName)
@@ -1056,12 +1179,7 @@ module.exports = class SwaggerService extends Service {
         type: 'string'
       }
     })
-    pathItem.get.responses = {}
-    pathItem.get.responses['200'] = this.genResponseObject('200', modelName)
-    pathItem.get.responses['400'] = this.genResponseObject('400')
-    pathItem.get.responses['401'] = this.genResponseObject('401')
-    pathItem.get.responses['404'] = this.genResponseObject('404')
-    pathItem.get.responses['500'] = this.genResponseObject('500')
+    pathItem.get.responses = this.genResponseObjectModel(modelName)
     pathItem.get.security = this.getPathSecurity(doc, modelName)
 
     pathItem.put = {}
@@ -1088,12 +1206,7 @@ module.exports = class SwaggerService extends Service {
         '$ref': '#/definitions/' + modelName
       }
     })
-    pathItem.put.responses = {}
-    pathItem.put.responses['200'] = this.genResponseObject('200', modelName)
-    pathItem.put.responses['400'] = this.genResponseObject('400')
-    pathItem.put.responses['401'] = this.genResponseObject('401')
-    pathItem.put.responses['404'] = this.genResponseObject('404')
-    pathItem.put.responses['500'] = this.genResponseObject('500')
+    pathItem.put.responses = this.genResponseObjectModel(modelName)
     pathItem.put.security = this.getPathSecurity(doc, modelName)
 
     pathItem.delete = {}
@@ -1110,12 +1223,7 @@ module.exports = class SwaggerService extends Service {
       required: true,
       type: 'string'
     })
-    pathItem.delete.responses = {}
-    pathItem.delete.responses['200'] = this.genResponseObject('200', modelName)
-    pathItem.delete.responses['400'] = this.genResponseObject('400')
-    pathItem.delete.responses['401'] = this.genResponseObject('401')
-    pathItem.delete.responses['404'] = this.genResponseObject('404')
-    pathItem.delete.responses['500'] = this.genResponseObject('500')
+    pathItem.delete.responses = this.genResponseObjectModel(modelName)
     pathItem.delete.security = this.getPathSecurity(doc, modelName)
 
     paths[pathId] = pathItem
@@ -1124,7 +1232,7 @@ module.exports = class SwaggerService extends Service {
 
   getPathModelByIdAndRelation(paths, config, doc, modelName, modelRelation) {
     const pathItem = {}
-    const pathId = '/' + modelName.toLowerCase() + '/{id}/' + modelRelation.property.toLowerCase()
+    const pathId = standardBasePath + '/' + modelName.toLowerCase() + '/{id}/' + modelRelation.property.toLowerCase()
 
     pathItem.get = {}
     pathItem.get.summary = 'List all ' + inflect.titleize(inflect.pluralize(modelRelation.property)) + ' on ' + inflect.titleize(modelRelation.model)
@@ -1158,8 +1266,8 @@ module.exports = class SwaggerService extends Service {
       in: 'query',
       description: 'Pagination size',
       required: false,
-      type: 'number',
-      format: 'int',
+      type: 'integer',
+      format: 'int32',
       default: this.getPathDefaultLimit(config)
     })
     pathItem.get.parameters.push({
@@ -1167,16 +1275,11 @@ module.exports = class SwaggerService extends Service {
       in: 'query',
       description: 'Pagination cusrsor',
       required: false,
-      type: 'number',
-      format: 'int',
+      type: 'integer',
+      format: 'int32',
       default: 0
     })
-    pathItem.get.responses = {}
-    pathItem.get.responses['200'] = this.genResponseObject('200', inflect.pluralize(modelRelation.model))
-    pathItem.get.responses['400'] = this.genResponseObject('400')
-    pathItem.get.responses['401'] = this.genResponseObject('401')
-    pathItem.get.responses['404'] = this.genResponseObject('404')
-    pathItem.get.responses['500'] = this.genResponseObject('500')
+    pathItem.get.responses = this.genResponseObjectModel(modelRelation.model, true)
     pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.post = {}
@@ -1206,12 +1309,7 @@ module.exports = class SwaggerService extends Service {
         '$ref': '#/definitions/' + modelRelation.model
       }
     })
-    pathItem.post.responses = {}
-    pathItem.post.responses['200'] = this.genResponseObject('200', modelRelation.model)
-    pathItem.post.responses['400'] = this.genResponseObject('400')
-    pathItem.post.responses['401'] = this.genResponseObject('401')
-    pathItem.post.responses['404'] = this.genResponseObject('404')
-    pathItem.post.responses['500'] = this.genResponseObject('500')
+    pathItem.post.responses = this.genResponseObjectModel(modelRelation.model)
     pathItem.post.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.put = {}
@@ -1241,12 +1339,7 @@ module.exports = class SwaggerService extends Service {
         '$ref': '#/definitions/' + modelRelation.model
       }
     })
-    pathItem.put.responses = {}
-    pathItem.put.responses['200'] = this.genResponseObject('200', modelRelation.model)
-    pathItem.put.responses['400'] = this.genResponseObject('400')
-    pathItem.put.responses['401'] = this.genResponseObject('401')
-    pathItem.put.responses['404'] = this.genResponseObject('404')
-    pathItem.put.responses['500'] = this.genResponseObject('500')
+    pathItem.put.responses = this.genResponseObjectModel(modelRelation.model)
     pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.delete = {}
@@ -1266,12 +1359,7 @@ module.exports = class SwaggerService extends Service {
       required: true,
       type: 'string'
     })
-    pathItem.delete.responses = {}
-    pathItem.delete.responses['200'] = this.genResponseObject('200', modelRelation.model)
-    pathItem.delete.responses['400'] = this.genResponseObject('400')
-    pathItem.delete.responses['401'] = this.genResponseObject('401')
-    pathItem.delete.responses['404'] = this.genResponseObject('404')
-    pathItem.delete.responses['500'] = this.genResponseObject('500')
+    pathItem.delete.responses = this.genResponseObjectModel(modelRelation.model)
     pathItem.delete.security = this.getPathSecurity(doc, modelRelation.model)
 
     paths[pathId] = pathItem
@@ -1280,7 +1368,7 @@ module.exports = class SwaggerService extends Service {
 
   getPathModelByIdAndRelationById(paths, config, doc, modelName, modelRelation) {
     const pathItem = {}
-    const pathId = '/' + modelName.toLowerCase() + '/{id}/' + modelRelation.property.toLowerCase() + '/{cid}'
+    const pathId = standardBasePath + '/' + modelName.toLowerCase() + '/{id}/' + modelRelation.property.toLowerCase() + '/{cid}'
 
     pathItem.get = {}
     pathItem.get.summary = 'Get a ' + inflect.titleize(modelRelation.property) + ' on ' + inflect.titleize(modelName)
@@ -1316,12 +1404,7 @@ module.exports = class SwaggerService extends Service {
         type: 'string'
       }
     })
-    pathItem.get.responses = {}
-    pathItem.get.responses['200'] = this.genResponseObject('200', modelRelation.model)
-    pathItem.get.responses['400'] = this.genResponseObject('400')
-    pathItem.get.responses['401'] = this.genResponseObject('401')
-    pathItem.get.responses['404'] = this.genResponseObject('404')
-    pathItem.get.responses['500'] = this.genResponseObject('500')
+    pathItem.get.responses = this.genResponseObjectModel(modelRelation.model)
     pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.put = {}
@@ -1358,12 +1441,7 @@ module.exports = class SwaggerService extends Service {
         '$ref': '#/definitions/' + modelRelation.model
       }
     })
-    pathItem.put.responses = {}
-    pathItem.put.responses['200'] = this.genResponseObject('200', modelRelation.model)
-    pathItem.put.responses['400'] = this.genResponseObject('400')
-    pathItem.put.responses['401'] = this.genResponseObject('401')
-    pathItem.put.responses['404'] = this.genResponseObject('404')
-    pathItem.put.responses['500'] = this.genResponseObject('500')
+    pathItem.put.responses = this.genResponseObjectModel(modelRelation.model)
     pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.delete = {}
@@ -1390,12 +1468,7 @@ module.exports = class SwaggerService extends Service {
       required: true,
       type: 'string'
     })
-    pathItem.delete.responses = {}
-    pathItem.delete.responses['200'] = this.genResponseObject('200', modelRelation.model)
-    pathItem.delete.responses['400'] = this.genResponseObject('400')
-    pathItem.delete.responses['401'] = this.genResponseObject('401')
-    pathItem.delete.responses['404'] = this.genResponseObject('404')
-    pathItem.delete.responses['500'] = this.genResponseObject('500')
+    pathItem.delete.responses = this.genResponseObjectModel(modelRelation.model)
     pathItem.delete.security = this.getPathSecurity(doc, modelRelation.model)
 
     paths[pathId] = pathItem
@@ -1405,8 +1478,8 @@ module.exports = class SwaggerService extends Service {
   getPaths(config, doc) {
     let paths = {}
 
-    if (config.passport) {
-      for (const authType in config.passport) {
+    if (config.passport && config.passport.strategies) {
+      for (const authType in config.passport.strategies) {
         switch (authType) {
         case 'local':
 
@@ -1466,12 +1539,10 @@ module.exports = class SwaggerService extends Service {
     doc.consumes = this.getConsumes(config)
     doc.produces = this.getProduces(config)
     doc.host = this.getHost(config)
-    // doc.port = this.getPort(config)
     doc.securityDefinitions = this.getSecurityDefinitions(config)
     doc.security = this.getSecurity(config)
     doc.tags = this.getTags(config, doc)
     doc.definitions = this.getDefinitions(config, doc)
-    doc.responses = this.getResponses(config, doc)
     doc.paths = this.getPaths(config, doc)
 
     return doc
