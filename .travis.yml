@@ -1,0 +1,16 @@
+language: node_js
+node_js:
+- 4
+- 5
+- 6
+- 7
+deploy:
+  provider: npm
+  email: matteo@thetophat.org
+  api_key:
+    secure: HIUfKT7QygIeYICz9JZjo8+qqYDLDM5xu05XRyj7Rng2+rUNIfhp6juP2o3pjhNOPBHZt0FK6VuSQg1dxhkTLmRnwy092gzddgQkoppMDQa2Ogh6GK0ybDqDeev9l4xR2rHpA/x5Z5G5bJOpmtqhTQSjB/neXnrT262O0gwi9vDCCGbRfX+9QbjRnDBh/BtFvKkX5x69cPHmq7gk2Xhh+e2nbMVMa376FDYrzcdhOxrhX7Dcv3qmMRKHW4KXqz3l0PeGSaqNAV/hiBcatERkpdVCRKgeKIsSRM1HzacTH40NFqWm9wjX3a8mvicp+T4m0f37ADUEqgbqV2q/bcJrlhsoiLFOSeNjMmd9jVFikGlAgTn4eLRM09E6k4DbepjrQwoUivYHKYAkI6orAs3MVzaU2JA8meDuS9IKUxzYD58vejcCk/Y9/NETHO/EKG3E8YhCljR0O/Kd3zparz1vLS3UjmpTOY3clnSyjQsr35LPQJzU6POzUC1DGXaGKdOimuS2zMZolFbFTVnPc89Syf3gTdAJmJFUdDR2VJXougvQSdv6fVONW6f9dq5mG8vcKI8xdbAlD61IEOQK0kMIl6gvoyOZ1N89QMQVAc2kSVpEbpCJWDujsv2scZ09PYce5hfkzNX3fejP4iH2RRI8mTe7yo0qh0ZpQYrKSJzLrEY=
+  on:
+    tags: true
+    repo: matteozambon89/trailpack-swagger
+    branch: master
+    node: 6
