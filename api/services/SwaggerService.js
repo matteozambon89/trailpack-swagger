@@ -1512,6 +1512,8 @@ module.exports = class SwaggerService extends Service {
         paths = this.getPathModelByIdAndRelationById(paths, config, doc, modelName, modelRelation)
       }
     }
+    
+    paths = Object.assign(paths, this.app.config.swagger.paths)
 
     return paths
   }
