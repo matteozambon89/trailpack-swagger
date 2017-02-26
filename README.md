@@ -203,9 +203,10 @@ I'm happy to receive contributions of any kind!
 
 ### Contribute in what matters
 
-- [ ] Compatibility with TrailsJS 2.x
+- [x] Compatibility with TrailsJS 2.x
 - [ ] Test the support of hapi.js
 - [ ] Test the support of Sequelize
+- [ ] Generate Swagger Endpoints from TrailsJS Routes
 - [ ] Swagger Editor to generate Models and Footprint APIs from a JSON
 
 ## Did you like my work?
