@@ -4,7 +4,7 @@ const faker = require('faker')
 const objectPath = require('object-path')
 const inflect = require('i')()
 
-const Service = require('trails-service')
+const Service = require('trails/service')
 
 let modelMap = []
 let modelRelations = {}

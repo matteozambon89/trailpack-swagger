@@ -17,7 +17,6 @@ const App = {
         require('trailpack-express'),
         require('trailpack-waterline'),
         require('trailpack-router'),
-        require('trailpack-core'),
         require('../')
       ]
     },
