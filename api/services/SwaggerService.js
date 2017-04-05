@@ -1501,23 +1501,17 @@ module.exports = class SwaggerService extends Service {
 
       // /{model}/{id}
       paths = this.getPathModelById(paths, config, doc, modelName)
-
       for (const modelRelationIndex in modelRelations[modelName]) {
         const modelRelation = modelRelations[modelName][modelRelationIndex]
-
         // /{model}/{id}/{child}
         paths = this.getPathModelByIdAndRelation(paths, config, doc, modelName, modelRelation)
-
         // /{model}/{id}/{child}/{cid}
         paths = this.getPathModelByIdAndRelationById(paths, config, doc, modelName, modelRelation)
       }
     }
-    
     paths = Object.assign(paths, this.app.config.swagger.paths)
-
     return paths
   }
-
   getModelMap() {
     modelMap = []
 
