@@ -3,24 +3,40 @@
 const _ = require('lodash')
 const smokesignals = require('smokesignals')
 
-module.exports = _.defaultsDeep({
+const Api = require('./api')
+
+const App = {
   pkg: {
     name: require('../package').name + '-test'
   },
-  api: {
-    models: { },
-    controllers: { },
-    services: { }
-  },
+  api: Api,
   config: {
     main: {
       packs: [
-        smokesignals.Trailpack,
+        //smokesignals.Trailpack,
+        require('trailpack-express'),
+        require('trailpack-waterline'),
+        require('trailpack-router'),
         require('trailpack-core'),
         require('../')
       ]
+    },
+    database: {
+      stores: {
+        dev: {
+          adapter: require('waterline-sqlite3'),
+          migrate: 'drop'
+        }
+      },
+      models: {
+        defaultStore: 'dev',
+        migrate: 'drop'
+      }
+    },
+    web: {
+      express: require('express')
     }
   }
-}, smokesignals.FailsafeConfig)
-
-
+}
+_.defaultsDeep(App, smokesignals.FailsafeConfig)
+module.exports = App
