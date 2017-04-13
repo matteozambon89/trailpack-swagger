@@ -7,9 +7,9 @@ const inflect = require('i')()
 const Service = require('trails/service')
 
 let modelMap = []
-let modelRelations = {}
-let modelPopulates = {}
-let cachedModels = {}
+const modelRelations = {}
+const modelPopulates = {}
+const cachedModels = {}
 
 let standardBasePath = ''
 let passportBasePath = ''
@@ -23,7 +23,7 @@ module.exports = class SwaggerService extends Service {
 // Example
 
   extractExampleDirective (propertyExample) {
-    let directive = {}
+    const directive = {}
 
     // Clean Example
     let propertyExampleClean = propertyExample.replace(/^{{|}}$/g, '')
@@ -49,7 +49,9 @@ module.exports = class SwaggerService extends Service {
     else {
       const directiveFaker = propertyExampleClean.split('.')
 
-      if (directiveFaker.length === 2 && faker[directiveFaker[0]] && typeof faker[directiveFaker[0]][directiveFaker[1]] === 'function') {
+      if (directiveFaker.length === 2 &&
+          faker[directiveFaker[0]] &&
+          typeof faker[directiveFaker[0]][directiveFaker[1]] === 'function') {
         directive.faker = faker[directiveFaker[0]][directiveFaker[1]]()
       }
       else {
@@ -83,7 +85,10 @@ module.exports = class SwaggerService extends Service {
       else if (directive.model && withRel) {
         if (!cachedModels[directive.model]) {
 
-          cachedModels[directive.model] = this.getModelExample(this.app.api.models[directive.model], false)
+          cachedModels[directive.model] = this.getModelExample(
+            this.app.api.models[directive.model],
+            false
+          )
         }
 
         example = cachedModels[directive.model]
@@ -223,8 +228,12 @@ module.exports = class SwaggerService extends Service {
 
           let basePath = []
 
-          let path1 = footprintsPrefix.length < passportPrefix.length ? footprintsPrefix : passportPrefix
-          let path2 = footprintsPrefix.length > passportPrefix.length ? footprintsPrefix : passportPrefix
+          let path1 = footprintsPrefix.length < passportPrefix.length ?
+                        footprintsPrefix :
+                        passportPrefix
+          let path2 = footprintsPrefix.length > passportPrefix.length ?
+                        footprintsPrefix :
+                        passportPrefix
 
           path1 = path1.split('/')
           path2 = path2.split('/')
@@ -565,7 +574,11 @@ module.exports = class SwaggerService extends Service {
       // Add Definition to SwaggerJson
       definitions[modelName] = this.getDefinitionModel(config, doc, models, modelName)
 
-      if (modelName === 'User' && config.passport && config.passport.strategies && config.passport.strategies.local) {
+      if (modelName === 'User' &&
+        config.passport &&
+        config.passport.strategies &&
+        config.passport.strategies.local
+      ) {
         const localStrategy = config.passport.strategies.local
         let usernameField = 'username'
 
@@ -885,7 +898,9 @@ module.exports = class SwaggerService extends Service {
     }
 
     pathItem.post = {}
-    pathItem.post.summary = 'Register a User object with ' + usernameField + ' and password as login credentials'
+    pathItem.post.summary = 'Register a User object with ' +
+                            usernameField +
+                            ' and password as login credentials'
     pathItem.post.operationId = 'auth.localRegister'
     pathItem.post.tags = [
       'Auth',
@@ -1042,7 +1057,10 @@ module.exports = class SwaggerService extends Service {
       const criteria = {
         name: propertyName,
         in: 'query',
-        description: 'Filter ' + inflect.titleize(modelName) + ' by ' + inflect.titleize(propertyName),
+        description: 'Filter ' +
+                      inflect.titleize(modelName) +
+                      ' by ' +
+                      inflect.titleize(propertyName),
         required: false,
         type: property.type,
         format: property.format,
@@ -1232,10 +1250,17 @@ module.exports = class SwaggerService extends Service {
 
   getPathModelByIdAndRelation(paths, config, doc, modelName, modelRelation) {
     const pathItem = {}
-    const pathId = standardBasePath + '/' + modelName.toLowerCase() + '/{id}/' + modelRelation.property.toLowerCase()
+    const pathId = standardBasePath +
+                    '/' +
+                    modelName.toLowerCase() +
+                    '/{id}/' +
+                    modelRelation.property.toLowerCase()
 
     pathItem.get = {}
-    pathItem.get.summary = 'List all ' + inflect.titleize(inflect.pluralize(modelRelation.property)) + ' on ' + inflect.titleize(modelRelation.model)
+    pathItem.get.summary = 'List all ' +
+                            inflect.titleize(inflect.pluralize(modelRelation.property)) +
+                            ' on ' +
+                            inflect.titleize(modelRelation.model)
     pathItem.get.operationId = modelName + '.find' + inflect.camelize(modelRelation.property)
     pathItem.get.tags = [
       modelName
@@ -1254,7 +1279,9 @@ module.exports = class SwaggerService extends Service {
     pathItem.get.parameters.push({
       name: 'populate',
       in: 'query',
-      description: 'Properties to populate (check populate for ' + inflect.titleize(modelRelation.model) + ')',
+      description: 'Properties to populate (check populate for ' +
+                    inflect.titleize(modelRelation.model) +
+                    ')',
       required: false,
       type: 'array',
       items: {
@@ -1283,7 +1310,10 @@ module.exports = class SwaggerService extends Service {
     pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.post = {}
-    pathItem.post.summary = 'Create a ' + inflect.titleize(inflect.pluralize(modelRelation.property)) + ' on ' + inflect.titleize(modelRelation.model)
+    pathItem.post.summary = 'Create a ' +
+                            inflect.titleize(inflect.pluralize(modelRelation.property)) +
+                            ' on ' +
+                            inflect.titleize(modelRelation.model)
     pathItem.post.operationId = modelName + '.create' + inflect.camelize(modelRelation.property)
     pathItem.post.tags = [
       modelName
@@ -1313,7 +1343,10 @@ module.exports = class SwaggerService extends Service {
     pathItem.post.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.put = {}
-    pathItem.put.summary = 'Update a ' + inflect.titleize(modelRelation.property) + ' on ' + inflect.titleize(modelName)
+    pathItem.put.summary = 'Update a ' +
+                            inflect.titleize(modelRelation.property) +
+                            ' on ' +
+                            inflect.titleize(modelName)
     pathItem.put.operationId = modelName + '.update' + inflect.camelize(modelRelation.property)
     pathItem.put.tags = [
       modelName
@@ -1343,7 +1376,10 @@ module.exports = class SwaggerService extends Service {
     pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.delete = {}
-    pathItem.delete.summary = 'Destroy a ' + inflect.titleize(modelRelation.property) + ' on ' + inflect.titleize(modelName)
+    pathItem.delete.summary = 'Destroy a ' +
+                              inflect.titleize(modelRelation.property) +
+                              ' on ' +
+                              inflect.titleize(modelName)
     pathItem.delete.operationId = modelName + '.destroy' + inflect.camelize(modelRelation.property)
     pathItem.delete.tags = [
       modelName
@@ -1368,10 +1404,18 @@ module.exports = class SwaggerService extends Service {
 
   getPathModelByIdAndRelationById(paths, config, doc, modelName, modelRelation) {
     const pathItem = {}
-    const pathId = standardBasePath + '/' + modelName.toLowerCase() + '/{id}/' + modelRelation.property.toLowerCase() + '/{cid}'
+    const pathId = standardBasePath +
+                    '/' +
+                    modelName.toLowerCase() +
+                    '/{id}/' +
+                    modelRelation.property.toLowerCase() +
+                    '/{cid}'
 
     pathItem.get = {}
-    pathItem.get.summary = 'Get a ' + inflect.titleize(modelRelation.property) + ' on ' + inflect.titleize(modelName)
+    pathItem.get.summary = 'Get a ' +
+                            inflect.titleize(modelRelation.property) +
+                            ' on ' +
+                            inflect.titleize(modelName)
     pathItem.get.operationId = modelName + '.findById' + inflect.camelize(modelRelation.property)
     pathItem.get.tags = [
       modelName
@@ -1397,7 +1441,9 @@ module.exports = class SwaggerService extends Service {
     pathItem.get.parameters.push({
       name: 'populate',
       in: 'query',
-      description: 'Properties to populate (check populate for ' + inflect.titleize(modelRelation.model) + ')',
+      description: 'Properties to populate (check populate for ' +
+                    inflect.titleize(modelRelation.model) +
+                    ')',
       required: false,
       type: 'array',
       items: {
@@ -1408,7 +1454,10 @@ module.exports = class SwaggerService extends Service {
     pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.put = {}
-    pathItem.put.summary = 'Update a ' + inflect.titleize(modelRelation.property) + ' on ' + inflect.titleize(modelName)
+    pathItem.put.summary = 'Update a ' +
+                            inflect.titleize(modelRelation.property) +
+                            ' on ' +
+                            inflect.titleize(modelName)
     pathItem.put.operationId = modelName + '.updateById' + inflect.camelize(modelRelation.property)
     pathItem.put.tags = [
       modelName
@@ -1445,8 +1494,13 @@ module.exports = class SwaggerService extends Service {
     pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
 
     pathItem.delete = {}
-    pathItem.delete.summary = 'Destroy a ' + inflect.titleize(modelRelation.property) + ' on ' + inflect.titleize(modelName)
-    pathItem.delete.operationId = modelName + '.destroyById' + inflect.camelize(modelRelation.property)
+    pathItem.delete.summary = 'Destroy a ' +
+                              inflect.titleize(modelRelation.property) +
+                              ' on ' +
+                              inflect.titleize(modelName)
+    pathItem.delete.operationId = modelName +
+                                  '.destroyById' +
+                                  inflect.camelize(modelRelation.property)
     pathItem.delete.tags = [
       modelName
     ]
