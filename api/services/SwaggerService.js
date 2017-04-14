@@ -3,6 +3,8 @@
 const faker = require('faker')
 const objectPath = require('object-path')
 const inflect = require('i')()
+const _ = require('lodash')
+const safeAccess = require('safe-access')
 
 const Service = require('trails/service')
 
@@ -1563,9 +1565,34 @@ module.exports = class SwaggerService extends Service {
         paths = this.getPathModelByIdAndRelationById(paths, config, doc, modelName, modelRelation)
       }
     }
+    paths = this.getCustomRoutes(paths)
     paths = Object.assign(paths, this.app.config.swagger.paths)
     return paths
   }
+
+  getCustomRoutes(paths) {
+    const basePath = this.getBasePath(this.app.config)
+    const customRoutes = _.filter(this.app.config.routes, (route) => {
+      return route.path.indexOf('{model}') === -1 &&
+        route.path.indexOf('{parentModel}') === -1 &&
+        route.path.indexOf(basePath) >= 0 &&
+        route.path.indexOf('/swagger/doc') === -1
+    })
+    const routes = _.zipObject(_.map(customRoutes, (route) => {
+      const path = route.path
+      return path.substr(basePath.length, path.length - 1)
+    }), _.map(customRoutes, (route) => {
+      const response = {}
+      response[_.toLower(route.method)] = {
+        description: safeAccess(route, 'config.plugins.swagger.description') ?
+          safeAccess(route, 'config.plugins.swagger.description') :
+          'Description has not been provided'
+      }
+      return response
+    }))
+    return routes
+  }
+
   getModelMap() {
     modelMap = []
 
@@ -1601,4 +1628,3 @@ module.exports = class SwaggerService extends Service {
 // End Swagger Doc
 
 }
-
