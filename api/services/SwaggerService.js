@@ -1571,23 +1571,25 @@ module.exports = class SwaggerService extends Service {
   }
 
   getCustomRoutes(paths) {
-    let basePath = this.getBasePath(this.app.config)
-    let customRoutes = _.filter(this.app.config.routes, (route) => {
+    const basePath = this.getBasePath(this.app.config)
+    const customRoutes = _.filter(this.app.config.routes, (route) => {
       return route.path.indexOf('{model}') === -1 &&
         route.path.indexOf('{parentModel}') === -1 &&
         route.path.indexOf(basePath) >= 0 &&
         route.path.indexOf('/swagger/doc') === -1
     })
-    let routes = _.zipObject(_.map(customRoutes, (route) => {
-      var path = route.path
+    const routes = _.zipObject(_.map(customRoutes, (route) => {
+      const path = route.path
       return path.substr(basePath.length, path.length - 1)
     }), _.map(customRoutes, (route) => {
-      var response = {}
+      const response = {}
       response[_.toLower(route.method)] = {
-        description: safeAccess(route, 'config.plugins.swagger.description') ? safeAccess(route, 'config.plugins.swagger.description') : 'Description has not been provided'
+        description: safeAccess(route, 'config.plugins.swagger.description') ?
+          safeAccess(route, 'config.plugins.swagger.description') :
+          'Description has not been provided'
       }
       return response
-    }));
+    }))
     return routes
   }
 
