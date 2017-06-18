@@ -34,7 +34,7 @@
     "mocha": "^3.2.0",
     "smokesignals": "^2.1.0",
     "trailpack-express": "^2.0.3",
-    "trailpack-router": "^2.1.1",
+    "trailpack-router": "^3.0.1",
     "trailpack-waterline": "^2.0.0",
     "trails": "latest",
     "waterline-sqlite3": "^1.0.3"
