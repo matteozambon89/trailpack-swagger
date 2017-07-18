@@ -23,7 +23,7 @@
     "faker": "^4.1.0",
     "i": "^0.3.5",
     "object-path": "^0.11.4",
-    "pluralize": "^5.0.0",
+    "pluralize": "^6.0.0",
     "trailpack": "^2.1.0"
   },
   "devDependencies": {
