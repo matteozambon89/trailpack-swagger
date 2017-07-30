@@ -1,0 +1,4 @@
+views/docs/*
+public/swagger.json
+node_modules/*
+plato/*

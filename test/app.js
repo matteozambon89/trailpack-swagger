@@ -1,35 +1,41 @@
+/**
+ * @Author: Matteo Zambon <Matteo>
+ * @Date:   2017-04-13 06:55:18
+ * @Last modified by:   Matteo
+ * @Last modified time: 2017-07-30 02:22:24
+ */
+
 'use strict'
 
 const _ = require('lodash')
 const smokesignals = require('smokesignals')
 
-const Api = require('./api')
-
 const App = {
   pkg: {
     name: require('../package').name + '-test'
   },
-  api: Api,
+  api: require('./api'),
   config: {
     main: {
       packs: [
-        //smokesignals.Trailpack,
+        // smokesignals.Trailpack,
+        // require('trailpack-core'),
+        require('trailpack-router'),
         require('trailpack-express'),
         require('trailpack-waterline'),
-        require('trailpack-router'),
         require('../')
       ]
     },
     database: {
       stores: {
-        dev: {
-          adapter: require('waterline-sqlite3'),
-          migrate: 'drop'
+        db: {
+          adapter: require('sails-memory'),
+          migrate: 'alter'
         }
       },
       models: {
-        defaultStore: 'dev',
-        migrate: 'drop'
+        defaultStore: 'db',
+        migrate: 'alter'
       }
     },
     web: {

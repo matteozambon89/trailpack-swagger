@@ -5,4 +5,7 @@
 --slow 50
 --check-leaks
 --globals app
---fgrep app.js --invert
+
+test/setup.js
+test/integration/
+test/unit/

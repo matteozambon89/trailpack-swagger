@@ -1,3 +1,10 @@
+/**
+ * @Author: Matteo Zambon <Matteo>
+ * @Date:   2017-04-13 06:55:18
+ * @Last modified by:   Matteo
+ * @Last modified time: 2017-07-30 01:06:47
+ */
+
 'use strict'
 
 const faker = require('faker')
@@ -136,9 +143,9 @@ module.exports = class SwaggerService extends Service {
     return modelExample
   }
 
-// End Example
+  // End Example
 
-// Swagger Doc
+  // Swagger Doc
 
   getInfoTitle(config) {
     if (config.swagger.title) {
@@ -190,7 +197,7 @@ module.exports = class SwaggerService extends Service {
       return config.swagger.version
     }
     else if (config.footprints && config.footprints.prefix) {
-      const matches = config.footprints.prefix.match(/(^|\/)v[0-9\.]+($|\/)/)
+      const matches = config.footprints.prefix.match(/(^|\/)v[0-9.]+($|\/)/)
 
       if (matches) {
         return matches[0].replace(/\//g, '')
@@ -229,11 +236,11 @@ module.exports = class SwaggerService extends Service {
           let basePath = []
 
           let path1 = footprintsPrefix.length < passportPrefix.length ?
-                        footprintsPrefix :
-                        passportPrefix
+            footprintsPrefix :
+            passportPrefix
           let path2 = footprintsPrefix.length > passportPrefix.length ?
-                        footprintsPrefix :
-                        passportPrefix
+            footprintsPrefix :
+            passportPrefix
 
           path1 = path1.split('/')
           path2 = path2.split('/')
@@ -1601,4 +1608,3 @@ module.exports = class SwaggerService extends Service {
 // End Swagger Doc
 
 }
-

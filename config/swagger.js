@@ -29,17 +29,17 @@ module.exports = {
    * @type {Object}
    */
 //   contact: {
-    /**
+  /**
      * The identifying name of the contact person/organization.
      * @type {String}
      */
 //     name: '',
-    /**
+  /**
      * The URL pointing to the contact information. MUST be in the format of a URL.
      * @type {String}
      */
 //     url: '',
-    /**
+  /**
      * The email address of the contact person/organization. MUST be in the format of an email address.
      * @type {String}
      */
@@ -50,12 +50,12 @@ module.exports = {
    * @type {Object}
    */
 //   license: {
-    /**
+  /**
      * The license name used for the API.
      * @type {String}
      */
 //     name: '',
-    /**
+  /**
      * A URL to the license used for the API. MUST be in the format of a URL.
      * @type {String}
      */

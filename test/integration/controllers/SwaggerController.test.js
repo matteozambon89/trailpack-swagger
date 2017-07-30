@@ -1,9 +1,16 @@
+/**
+ * @Author: Matteo Zambon <Matteo>
+ * @Date:   2017-01-11 05:21:35
+ * @Last modified by:   Matteo
+ * @Last modified time: 2017-07-30 02:25:23
+ */
+
 'use strict'
 /* global describe, it */
-const assert = require('assert')
+const {expect} = require('chai')
 
 describe('SwaggerController', () => {
   it('should exist', () => {
-    assert(global.app.api.controllers['SwaggerController'])
+    expect(global.app).to.have.nested.property('api.controllers.SwaggerController')
   })
 })

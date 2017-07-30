@@ -1,0 +1,24 @@
+{
+  "extends": "trails",
+  "plugins": [
+    "markdown",
+    "json",
+    "mocha"
+  ],
+  "globals": {
+    "test": true
+  },
+  "rules": {
+    "brace-style": [
+      "warn",
+      "stroustrup",
+      {
+        "allowSingleLine": true
+      }
+    ],
+    "linebreak-style": [
+      "error",
+      "unix"
+    ]
+  }
+}
