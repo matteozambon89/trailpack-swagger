@@ -39,7 +39,7 @@
     "smokesignals": "^3.0.3",
     "trailpack-core": "^2.0.0",
     "trailpack-express": "^2.0.3",
-    "trailpack-router": "3.0.1",
+    "trailpack-router": "3.1.4",
     "trailpack-waterline": "^1.0.0-beta-1",
     "trails": "latest"
   },
