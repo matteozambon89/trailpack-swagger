@@ -40,7 +40,7 @@
     "trailpack-core": "^2.0.0",
     "trailpack-express": "^2.0.3",
     "trailpack-router": "3.0.1",
-    "trailpack-waterline": "^1.0.0-beta-1",
+    "trailpack-waterline": "^3.0.0",
     "trails": "latest"
   },
   "scripts": {
