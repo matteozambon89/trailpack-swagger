@@ -1411,7 +1411,8 @@ module.exports = class SwaggerService extends Service {
                                 inflect.titleize(modelRelation.property) +
                                 ' on ' +
                                 inflect.titleize(modelName)
-      pathItem.delete.operationId = modelName + '.destroy' + inflect.camelize(modelRelation.property)
+      pathItem.delete.operationId = modelName + '.destroy'
+                                  + inflect.camelize(modelRelation.property)
       pathItem.delete.tags = [
         modelName
       ]
@@ -1494,7 +1495,8 @@ module.exports = class SwaggerService extends Service {
                              inflect.titleize(modelRelation.property) +
                              ' on ' +
                              inflect.titleize(modelName)
-      pathItem.put.operationId = modelName + '.updateById' + inflect.camelize(modelRelation.property)
+      pathItem.put.operationId = modelName + '.updateById'
+                               + inflect.camelize(modelRelation.property)
       pathItem.put.tags = [
         modelName
       ]
