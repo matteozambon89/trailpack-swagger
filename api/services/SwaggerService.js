@@ -10,6 +10,7 @@
 const faker = require('faker')
 const objectPath = require('object-path')
 const inflect = require('i')()
+const _ = require('lodash')
 
 const Service = require('trails/service')
 
@@ -271,7 +272,8 @@ module.exports = class SwaggerService extends Service {
         }
       }
 
-      return config.footprints.prefix
+      standardBasePath = config.footprints.prefix
+      return '/'
     }
     else {
       return '/api'
@@ -1570,7 +1572,8 @@ module.exports = class SwaggerService extends Service {
         paths = this.getPathModelByIdAndRelationById(paths, config, doc, modelName, modelRelation)
       }
     }
-    paths = Object.assign(paths, this.app.config.swagger.paths)
+    paths = Object.assign({}, paths, this.getPathsFromRoutes(config))
+    paths = Object.assign({}, paths, this.app.config.swagger.paths)
     return paths
   }
   getModelMap() {
@@ -1580,6 +1583,51 @@ module.exports = class SwaggerService extends Service {
     for (const modelName in models) {
       modelMap.push(modelName)
     }
+  }
+
+  getPathsFromRoutes(config) {
+    const routes = _.filter(config.routes, (route) => {
+      if (route.path.indexOf('{parentModel}') > -1) {
+        return false
+      } else if (route.path.indexOf('{model}') > -1) {
+        return false
+      }
+      return true
+    })
+    const paths = {}
+    _.each(routes, (route) => {
+      const path = route.path
+      let tag = 'Default'
+      if (route.path === '/api/explorer') {
+        tag = 'Swagger'
+      }
+      if (route.handler && route.handler.match) {
+        const matches = route.handler.match(/(.+)Controller\./)
+        if (matches.length >= 2) tag = matches[1]
+      }
+      if (_.isArray(route.method)) {
+        _.each(route.method, (method) => {
+          method = method.toLowerCase()
+          if (!paths[path]) paths[path] = {}
+          paths[path][method] = {
+            tags: [tag]
+          }
+          if (route.config && route.config.plugins && route.config.plugins.swagger) {
+            paths[path][method] = Object.assign({}, paths[path][method], route.config.plugins.swagger)
+          }
+        })
+      } else {
+        const method = route.method.toLowerCase()
+        if (!paths[path]) paths[path] = {}
+        paths[path][method] = {
+          tags: [tag]
+        }
+        if (route.config && route.config.plugins && route.config.plugins.swagger) {
+          paths[path][method] = Object.assign({}, paths[path][method], route.config.plugins.swagger)
+        }
+      }
+    })
+    return paths
   }
 
   getSwaggerDoc() {
