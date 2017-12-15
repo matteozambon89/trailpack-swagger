@@ -1083,94 +1083,103 @@ module.exports = class SwaggerService extends Service {
   getPathModel(paths, config, doc, modelName) {
     const pathItem = {}
     const pathId = standardBasePath + '/' + modelName.toLowerCase()
+    const actions = config.footprints.models.actions
 
-    pathItem.get = {}
-    pathItem.get.summary = 'List all ' + inflect.titleize(inflect.pluralize(modelName))
-    pathItem.get.operationId = modelName + '.find'
-    pathItem.get.tags = [
-      modelName
-    ]
-    pathItem.get.parameters = this.getModelCriteria(config, doc, modelName, true)
-    pathItem.get.parameters.push({
-      name: 'populate',
-      in: 'query',
-      description: 'Properties to populate (valid: ' + modelPopulates[modelName].join(', ') + ')',
-      required: false,
-      type: 'array',
-      items: {
-        type: 'string'
-      }
-    })
-    pathItem.get.parameters.push({
-      name: 'limit',
-      in: 'query',
-      description: 'Pagination size',
-      required: false,
-      type: 'integer',
-      format: 'int32',
-      default: this.getPathDefaultLimit(config)
-    })
-    pathItem.get.parameters.push({
-      name: 'offset',
-      in: 'query',
-      description: 'Pagination cusrsor',
-      required: false,
-      type: 'integer',
-      format: 'int32',
-      default: 0
-    })
-    pathItem.get.responses = this.genResponseObjectModel(modelName, true)
-    pathItem.get.security = this.getPathSecurity(doc, modelName)
+    if (actions.find) {
+      pathItem.get = {}
+      pathItem.get.summary = 'List all ' + inflect.titleize(inflect.pluralize(modelName))
+      pathItem.get.operationId = modelName + '.find'
+      pathItem.get.tags = [
+        modelName
+      ]
+      pathItem.get.parameters = this.getModelCriteria(config, doc, modelName, true)
+      pathItem.get.parameters.push({
+        name: 'populate',
+        in: 'query',
+        description: 'Properties to populate (valid: ' + modelPopulates[modelName].join(', ') + ')',
+        required: false,
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      })
+      pathItem.get.parameters.push({
+        name: 'limit',
+        in: 'query',
+        description: 'Pagination size',
+        required: false,
+        type: 'integer',
+        format: 'int32',
+        default: this.getPathDefaultLimit(config)
+      })
+      pathItem.get.parameters.push({
+        name: 'offset',
+        in: 'query',
+        description: 'Pagination cusrsor',
+        required: false,
+        type: 'integer',
+        format: 'int32',
+        default: 0
+      })
+      pathItem.get.responses = this.genResponseObjectModel(modelName, true)
+      pathItem.get.security = this.getPathSecurity(doc, modelName)
+    }
 
-    pathItem.post = {}
-    pathItem.post.summary = 'Create a ' + inflect.titleize(inflect.pluralize(modelName))
-    pathItem.post.operationId = modelName + '.create'
-    pathItem.post.tags = [
-      modelName
-    ]
-    pathItem.post.parameters = []
-    pathItem.post.parameters.push({
-      name: 'data',
-      in: 'body',
-      description: 'Data to create a new ' + inflect.titleize(modelName),
-      required: true,
-      schema: {
-        description: inflect.titleize(modelName) + ' object',
-        '$ref': '#/definitions/' + modelName
-      }
-    })
-    pathItem.post.responses = this.genResponseObjectModel(modelName)
-    pathItem.post.security = this.getPathSecurity(doc, modelName)
+    if (actions.create) {
+      pathItem.post = {}
+      pathItem.post.summary = 'Create a ' + inflect.titleize(inflect.pluralize(modelName))
+      pathItem.post.operationId = modelName + '.create'
+      pathItem.post.tags = [
+        modelName
+      ]
+      pathItem.post.parameters = []
+      pathItem.post.parameters.push({
+        name: 'data',
+        in: 'body',
+        description: 'Data to create a new ' + inflect.titleize(modelName),
+        required: true,
+        schema: {
+          description: inflect.titleize(modelName) + ' object',
+          '$ref': '#/definitions/' + modelName
+        }
+      })
+      pathItem.post.responses = this.genResponseObjectModel(modelName)
+      pathItem.post.security = this.getPathSecurity(doc, modelName)
+    }
 
-    pathItem.put = {}
-    pathItem.put.summary = 'Update a ' + inflect.titleize(modelName)
-    pathItem.put.operationId = modelName + '.update'
-    pathItem.put.tags = [
-      modelName
-    ]
-    pathItem.put.parameters = this.getModelCriteria(config, doc, modelName, true)
-    pathItem.put.parameters.push({
-      name: 'data',
-      in: 'body',
-      description: 'Data to create a new ' + inflect.titleize(modelName),
-      required: true,
-      schema: {
-        description: inflect.titleize(modelName) + ' object',
-        '$ref': '#/definitions/' + modelName
-      }
-    })
-    pathItem.put.responses = this.genResponseObjectModel(modelName)
-    pathItem.put.security = this.getPathSecurity(doc, modelName)
+    if (actions.update) {
+      pathItem.put = {}
+      pathItem.put.summary = 'Update a ' + inflect.titleize(modelName)
+      pathItem.put.operationId = modelName + '.update'
+      pathItem.put.tags = [
+        modelName
+      ]
+      pathItem.put.parameters = this.getModelCriteria(config, doc, modelName, true)
+      pathItem.put.parameters.push({
+        name: 'data',
+        in: 'body',
+        description: 'Data to create a new ' + inflect.titleize(modelName),
+        required: true,
+        schema: {
+          description: inflect.titleize(modelName) + ' object',
+          '$ref': '#/definitions/' + modelName
+        }
+      })
+      pathItem.put.responses = this.genResponseObjectModel(modelName)
+      pathItem.put.security = this.getPathSecurity(doc, modelName)
+    }
 
-    pathItem.delete = {}
-    pathItem.delete.summary = 'Destroy a ' + inflect.titleize(inflect.pluralize(modelName))
-    pathItem.delete.operationId = modelName + '.destroy'
-    pathItem.delete.tags = [
-      modelName
-    ]
-    pathItem.delete.parameters = this.getModelCriteria(config, doc, modelName, true)
-    pathItem.delete.responses = this.genResponseObjectModel(modelName)
-    pathItem.delete.security = this.getPathSecurity(doc, modelName)
+    if (actions.destroy) {
+      pathItem.delete = {}
+      pathItem.delete.summary = 'Destroy a ' + inflect.titleize(inflect.pluralize(modelName))
+      pathItem.delete.operationId = modelName + '.destroy'
+      pathItem.delete.tags = [
+        modelName
+      ]
+      pathItem.delete.parameters = this.getModelCriteria(config, doc, modelName, true)
+      pathItem.delete.responses = this.genResponseObjectModel(modelName)
+      pathItem.delete.security = this.getPathSecurity(doc, modelName)
+    }
 
     paths[pathId] = pathItem
     return paths
@@ -1179,77 +1188,84 @@ module.exports = class SwaggerService extends Service {
   getPathModelById(paths, config, doc, modelName) {
     const pathItem = {}
     const pathId = standardBasePath + '/' + modelName.toLowerCase() + '/{id}'
+    const actions = config.footprints.models.actions
 
-    pathItem.get = {}
-    pathItem.get.summary = 'Get a ' + inflect.titleize(modelName)
-    pathItem.get.operationId = modelName + '.findById'
-    pathItem.get.tags = [
-      modelName
-    ]
-    pathItem.get.parameters = this.getModelCriteria(config, doc, modelName)
-    pathItem.get.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.get.parameters.push({
-      name: 'populate',
-      in: 'query',
-      description: 'Properties to populate (valid: ' + modelPopulates[modelName].join(', ') + ')',
-      required: false,
-      type: 'array',
-      items: {
+    if (actions.find) {
+      pathItem.get = {}
+      pathItem.get.summary = 'Get a ' + inflect.titleize(modelName)
+      pathItem.get.operationId = modelName + '.findById'
+      pathItem.get.tags = [
+        modelName
+      ]
+      pathItem.get.parameters = this.getModelCriteria(config, doc, modelName)
+      pathItem.get.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
         type: 'string'
-      }
-    })
-    pathItem.get.responses = this.genResponseObjectModel(modelName)
-    pathItem.get.security = this.getPathSecurity(doc, modelName)
+      })
+      pathItem.get.parameters.push({
+        name: 'populate',
+        in: 'query',
+        description: 'Properties to populate (valid: ' + modelPopulates[modelName].join(', ') + ')',
+        required: false,
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      })
+      pathItem.get.responses = this.genResponseObjectModel(modelName)
+      pathItem.get.security = this.getPathSecurity(doc, modelName)
+    }
 
-    pathItem.put = {}
-    pathItem.put.summary = 'Update a ' + inflect.titleize(modelName)
-    pathItem.put.operationId = modelName + '.updateById'
-    pathItem.put.tags = [
-      modelName
-    ]
-    pathItem.put.parameters = this.getModelCriteria(config, doc, modelName)
-    pathItem.put.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.put.parameters.push({
-      name: 'data',
-      in: 'body',
-      description: 'Data to update a ' + inflect.titleize(modelName),
-      required: true,
-      schema: {
-        description: inflect.titleize(modelName) + ' object',
-        '$ref': '#/definitions/' + modelName
-      }
-    })
-    pathItem.put.responses = this.genResponseObjectModel(modelName)
-    pathItem.put.security = this.getPathSecurity(doc, modelName)
+    if (actions.update) {
+      pathItem.put = {}
+      pathItem.put.summary = 'Update a ' + inflect.titleize(modelName)
+      pathItem.put.operationId = modelName + '.updateById'
+      pathItem.put.tags = [
+        modelName
+      ]
+      pathItem.put.parameters = this.getModelCriteria(config, doc, modelName)
+      pathItem.put.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.put.parameters.push({
+        name: 'data',
+        in: 'body',
+        description: 'Data to update a ' + inflect.titleize(modelName),
+        required: true,
+        schema: {
+          description: inflect.titleize(modelName) + ' object',
+          '$ref': '#/definitions/' + modelName
+        }
+      })
+      pathItem.put.responses = this.genResponseObjectModel(modelName)
+      pathItem.put.security = this.getPathSecurity(doc, modelName)
+    }
 
-    pathItem.delete = {}
-    pathItem.delete.summary = 'Destroy a ' + inflect.titleize(modelName)
-    pathItem.delete.operationId = modelName + '.destroyById'
-    pathItem.delete.tags = [
-      modelName
-    ]
-    pathItem.delete.parameters = this.getModelCriteria(config, doc, modelName)
-    pathItem.delete.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.delete.responses = this.genResponseObjectModel(modelName)
-    pathItem.delete.security = this.getPathSecurity(doc, modelName)
+    if (actions.destroy) {
+      pathItem.delete = {}
+      pathItem.delete.summary = 'Destroy a ' + inflect.titleize(modelName)
+      pathItem.delete.operationId = modelName + '.destroyById'
+      pathItem.delete.tags = [
+        modelName
+      ]
+      pathItem.delete.parameters = this.getModelCriteria(config, doc, modelName)
+      pathItem.delete.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.delete.responses = this.genResponseObjectModel(modelName)
+      pathItem.delete.security = this.getPathSecurity(doc, modelName)
+    }
 
     paths[pathId] = pathItem
     return paths
@@ -1262,148 +1278,157 @@ module.exports = class SwaggerService extends Service {
                     modelName.toLowerCase() +
                     '/{id}/' +
                     modelRelation.property.toLowerCase()
+    const actions = config.footprints.models.actions
 
-    pathItem.get = {}
-    pathItem.get.summary = 'List all ' +
-                            inflect.titleize(inflect.pluralize(modelRelation.property)) +
-                            ' on ' +
-                            inflect.titleize(modelRelation.model)
-    pathItem.get.operationId = modelName + '.find' + inflect.camelize(modelRelation.property)
-    pathItem.get.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.get.tags.push(modelRelation.model)
-    }
-    pathItem.get.parameters = this.getModelCriteria(config, doc, modelRelation.model, true)
-    pathItem.get.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.get.parameters.push({
-      name: 'populate',
-      in: 'query',
-      description: 'Properties to populate (check populate for ' +
-                    inflect.titleize(modelRelation.model) +
-                    ')',
-      required: false,
-      type: 'array',
-      items: {
+    if (actions.find) {
+      pathItem.get = {}
+      pathItem.get.summary = 'List all ' +
+                             inflect.titleize(inflect.pluralize(modelRelation.property)) +
+                             ' on ' +
+                             inflect.titleize(modelRelation.model)
+      pathItem.get.operationId = modelName + '.find' + inflect.camelize(modelRelation.property)
+      pathItem.get.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.get.tags.push(modelRelation.model)
+      }
+      pathItem.get.parameters = this.getModelCriteria(config, doc, modelRelation.model, true)
+      pathItem.get.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
         type: 'string'
-      }
-    })
-    pathItem.get.parameters.push({
-      name: 'limit',
-      in: 'query',
-      description: 'Pagination size',
-      required: false,
-      type: 'integer',
-      format: 'int32',
-      default: this.getPathDefaultLimit(config)
-    })
-    pathItem.get.parameters.push({
-      name: 'offset',
-      in: 'query',
-      description: 'Pagination cusrsor',
-      required: false,
-      type: 'integer',
-      format: 'int32',
-      default: 0
-    })
-    pathItem.get.responses = this.genResponseObjectModel(modelRelation.model, true)
-    pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
-
-    pathItem.post = {}
-    pathItem.post.summary = 'Create a ' +
-                            inflect.titleize(inflect.pluralize(modelRelation.property)) +
-                            ' on ' +
-                            inflect.titleize(modelRelation.model)
-    pathItem.post.operationId = modelName + '.create' + inflect.camelize(modelRelation.property)
-    pathItem.post.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.post.tags.push(modelRelation.model)
+      })
+      pathItem.get.parameters.push({
+        name: 'populate',
+        in: 'query',
+        description: 'Properties to populate (check populate for ' +
+                     inflect.titleize(modelRelation.model) +
+                     ')',
+        required: false,
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      })
+      pathItem.get.parameters.push({
+        name: 'limit',
+        in: 'query',
+        description: 'Pagination size',
+        required: false,
+        type: 'integer',
+        format: 'int32',
+        default: this.getPathDefaultLimit(config)
+      })
+      pathItem.get.parameters.push({
+        name: 'offset',
+        in: 'query',
+        description: 'Pagination cusrsor',
+        required: false,
+        type: 'integer',
+        format: 'int32',
+        default: 0
+      })
+      pathItem.get.responses = this.genResponseObjectModel(modelRelation.model, true)
+      pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
     }
-    pathItem.post.parameters = []
-    pathItem.post.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.post.parameters.push({
-      name: 'data',
-      in: 'body',
-      description: 'Data to create a new ' + inflect.titleize(modelRelation.property),
-      required: true,
-      schema: {
-        description: inflect.titleize(modelRelation.property) + ' object',
-        '$ref': '#/definitions/' + modelRelation.model
-      }
-    })
-    pathItem.post.responses = this.genResponseObjectModel(modelRelation.model)
-    pathItem.post.security = this.getPathSecurity(doc, modelRelation.model)
 
-    pathItem.put = {}
-    pathItem.put.summary = 'Update a ' +
-                            inflect.titleize(modelRelation.property) +
-                            ' on ' +
-                            inflect.titleize(modelName)
-    pathItem.put.operationId = modelName + '.update' + inflect.camelize(modelRelation.property)
-    pathItem.put.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.put.tags.push(modelRelation.model)
-    }
-    pathItem.put.parameters = this.getModelCriteria(config, doc, modelRelation.model, true)
-    pathItem.put.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.put.parameters.push({
-      name: 'data',
-      in: 'body',
-      description: 'Data to update a ' + inflect.titleize(modelRelation.property),
-      required: true,
-      schema: {
-        description: inflect.titleize(modelRelation.property) + ' object',
-        '$ref': '#/definitions/' + modelRelation.model
-      }
-    })
-    pathItem.put.responses = this.genResponseObjectModel(modelRelation.model)
-    pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
-
-    pathItem.delete = {}
-    pathItem.delete.summary = 'Destroy a ' +
-                              inflect.titleize(modelRelation.property) +
+    if (actions.create) {
+      pathItem.post = {}
+      pathItem.post.summary = 'Create a ' +
+                              inflect.titleize(inflect.pluralize(modelRelation.property)) +
                               ' on ' +
-                              inflect.titleize(modelName)
-    pathItem.delete.operationId = modelName + '.destroy' + inflect.camelize(modelRelation.property)
-    pathItem.delete.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.delete.tags.push(modelRelation.model)
+                              inflect.titleize(modelRelation.model)
+      pathItem.post.operationId = modelName + '.create' + inflect.camelize(modelRelation.property)
+      pathItem.post.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.post.tags.push(modelRelation.model)
+      }
+      pathItem.post.parameters = []
+      pathItem.post.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.post.parameters.push({
+        name: 'data',
+        in: 'body',
+        description: 'Data to create a new ' + inflect.titleize(modelRelation.property),
+        required: true,
+        schema: {
+          description: inflect.titleize(modelRelation.property) + ' object',
+          '$ref': '#/definitions/' + modelRelation.model
+        }
+      })
+      pathItem.post.responses = this.genResponseObjectModel(modelRelation.model)
+      pathItem.post.security = this.getPathSecurity(doc, modelRelation.model)
     }
-    pathItem.delete.parameters = this.getModelCriteria(config, doc, modelRelation.model, true)
-    pathItem.delete.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.delete.responses = this.genResponseObjectModel(modelRelation.model)
-    pathItem.delete.security = this.getPathSecurity(doc, modelRelation.model)
+
+    if (actions.update) {
+      pathItem.put = {}
+      pathItem.put.summary = 'Update a ' +
+                             inflect.titleize(modelRelation.property) +
+                             ' on ' +
+                             inflect.titleize(modelName)
+      pathItem.put.operationId = modelName + '.update' + inflect.camelize(modelRelation.property)
+      pathItem.put.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.put.tags.push(modelRelation.model)
+      }
+      pathItem.put.parameters = this.getModelCriteria(config, doc, modelRelation.model, true)
+      pathItem.put.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.put.parameters.push({
+        name: 'data',
+        in: 'body',
+        description: 'Data to update a ' + inflect.titleize(modelRelation.property),
+        required: true,
+        schema: {
+          description: inflect.titleize(modelRelation.property) + ' object',
+          '$ref': '#/definitions/' + modelRelation.model
+        }
+      })
+      pathItem.put.responses = this.genResponseObjectModel(modelRelation.model)
+      pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
+    }
+
+    if (actions.destroy) {
+      pathItem.delete = {}
+      pathItem.delete.summary = 'Destroy a ' +
+                                inflect.titleize(modelRelation.property) +
+                                ' on ' +
+                                inflect.titleize(modelName)
+      pathItem.delete.operationId = modelName + '.destroy' + inflect.camelize(modelRelation.property)
+      pathItem.delete.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.delete.tags.push(modelRelation.model)
+      }
+      pathItem.delete.parameters = this.getModelCriteria(config, doc, modelRelation.model, true)
+      pathItem.delete.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.delete.responses = this.genResponseObjectModel(modelRelation.model)
+      pathItem.delete.security = this.getPathSecurity(doc, modelRelation.model)
+    }
 
     paths[pathId] = pathItem
     return paths
@@ -1417,120 +1442,127 @@ module.exports = class SwaggerService extends Service {
                     '/{id}/' +
                     modelRelation.property.toLowerCase() +
                     '/{cid}'
+    const actions = config.footprints.models.actions
 
-    pathItem.get = {}
-    pathItem.get.summary = 'Get a ' +
-                            inflect.titleize(modelRelation.property) +
-                            ' on ' +
-                            inflect.titleize(modelName)
-    pathItem.get.operationId = modelName + '.findById' + inflect.camelize(modelRelation.property)
-    pathItem.get.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.get.tags.push(modelRelation.model)
-    }
-    pathItem.get.parameters = this.getModelCriteria(config, doc, modelRelation.model)
-    pathItem.get.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.get.parameters.push({
-      name: 'cid',
-      in: 'path',
-      description: inflect.titleize(modelRelation.property) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.get.parameters.push({
-      name: 'populate',
-      in: 'query',
-      description: 'Properties to populate (check populate for ' +
-                    inflect.titleize(modelRelation.model) +
-                    ')',
-      required: false,
-      type: 'array',
-      items: {
+    if (actions.find) {
+      pathItem.get = {}
+      pathItem.get.summary = 'Get a ' +
+                             inflect.titleize(modelRelation.property) +
+                             ' on ' +
+                             inflect.titleize(modelName)
+      pathItem.get.operationId = modelName + '.findById' + inflect.camelize(modelRelation.property)
+      pathItem.get.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.get.tags.push(modelRelation.model)
+      }
+      pathItem.get.parameters = this.getModelCriteria(config, doc, modelRelation.model)
+      pathItem.get.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
         type: 'string'
-      }
-    })
-    pathItem.get.responses = this.genResponseObjectModel(modelRelation.model)
-    pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
-
-    pathItem.put = {}
-    pathItem.put.summary = 'Update a ' +
-                            inflect.titleize(modelRelation.property) +
-                            ' on ' +
-                            inflect.titleize(modelName)
-    pathItem.put.operationId = modelName + '.updateById' + inflect.camelize(modelRelation.property)
-    pathItem.put.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.put.tags.push(modelRelation.model)
+      })
+      pathItem.get.parameters.push({
+        name: 'cid',
+        in: 'path',
+        description: inflect.titleize(modelRelation.property) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.get.parameters.push({
+        name: 'populate',
+        in: 'query',
+        description: 'Properties to populate (check populate for ' +
+                     inflect.titleize(modelRelation.model) +
+                     ')',
+        required: false,
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      })
+      pathItem.get.responses = this.genResponseObjectModel(modelRelation.model)
+      pathItem.get.security = this.getPathSecurity(doc, modelRelation.model)
     }
-    pathItem.put.parameters = this.getModelCriteria(config, doc, modelRelation.model)
-    pathItem.put.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.put.parameters.push({
-      name: 'cid',
-      in: 'path',
-      description: inflect.titleize(modelRelation.property) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.put.parameters.push({
-      name: 'data',
-      in: 'body',
-      description: 'Data to update a ' + inflect.titleize(modelRelation.property),
-      required: true,
-      schema: {
-        description: inflect.titleize(modelRelation.property) + ' object',
-        '$ref': '#/definitions/' + modelRelation.model
-      }
-    })
-    pathItem.put.responses = this.genResponseObjectModel(modelRelation.model)
-    pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
 
-    pathItem.delete = {}
-    pathItem.delete.summary = 'Destroy a ' +
-                              inflect.titleize(modelRelation.property) +
-                              ' on ' +
-                              inflect.titleize(modelName)
-    pathItem.delete.operationId = modelName +
-                                  '.destroyById' +
-                                  inflect.camelize(modelRelation.property)
-    pathItem.delete.tags = [
-      modelName
-    ]
-    if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
-      pathItem.delete.tags.push(modelRelation.model)
+    if (actions.update) {
+      pathItem.put = {}
+      pathItem.put.summary = 'Update a ' +
+                             inflect.titleize(modelRelation.property) +
+                             ' on ' +
+                             inflect.titleize(modelName)
+      pathItem.put.operationId = modelName + '.updateById' + inflect.camelize(modelRelation.property)
+      pathItem.put.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.put.tags.push(modelRelation.model)
+      }
+      pathItem.put.parameters = this.getModelCriteria(config, doc, modelRelation.model)
+      pathItem.put.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.put.parameters.push({
+        name: 'cid',
+        in: 'path',
+        description: inflect.titleize(modelRelation.property) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.put.parameters.push({
+        name: 'data',
+        in: 'body',
+        description: 'Data to update a ' + inflect.titleize(modelRelation.property),
+        required: true,
+        schema: {
+          description: inflect.titleize(modelRelation.property) + ' object',
+          '$ref': '#/definitions/' + modelRelation.model
+        }
+      })
+      pathItem.put.responses = this.genResponseObjectModel(modelRelation.model)
+      pathItem.put.security = this.getPathSecurity(doc, modelRelation.model)
     }
-    pathItem.delete.parameters = this.getModelCriteria(config, doc, modelRelation.model)
-    pathItem.delete.parameters.push({
-      name: 'id',
-      in: 'path',
-      description: inflect.titleize(modelName) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.delete.parameters.push({
-      name: 'cid',
-      in: 'path',
-      description: inflect.titleize(modelRelation.model) + ' id',
-      required: true,
-      type: 'string'
-    })
-    pathItem.delete.responses = this.genResponseObjectModel(modelRelation.model)
-    pathItem.delete.security = this.getPathSecurity(doc, modelRelation.model)
+
+    if (actions.destroy) {
+      pathItem.delete = {}
+      pathItem.delete.summary = 'Destroy a ' +
+                                inflect.titleize(modelRelation.property) +
+                                ' on ' +
+                                inflect.titleize(modelName)
+      pathItem.delete.operationId = modelName +
+                                    '.destroyById' +
+                                    inflect.camelize(modelRelation.property)
+      pathItem.delete.tags = [
+        modelName
+      ]
+      if (modelName.toLowerCase() !== modelRelation.model.toLowerCase()) {
+        pathItem.delete.tags.push(modelRelation.model)
+      }
+      pathItem.delete.parameters = this.getModelCriteria(config, doc, modelRelation.model)
+      pathItem.delete.parameters.push({
+        name: 'id',
+        in: 'path',
+        description: inflect.titleize(modelName) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.delete.parameters.push({
+        name: 'cid',
+        in: 'path',
+        description: inflect.titleize(modelRelation.model) + ' id',
+        required: true,
+        type: 'string'
+      })
+      pathItem.delete.responses = this.genResponseObjectModel(modelRelation.model)
+      pathItem.delete.security = this.getPathSecurity(doc, modelRelation.model)
+    }
 
     paths[pathId] = pathItem
     return paths
