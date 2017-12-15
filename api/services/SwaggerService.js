@@ -1589,7 +1589,8 @@ module.exports = class SwaggerService extends Service {
     const routes = _.filter(config.routes, (route) => {
       if (route.path.indexOf('{parentModel}') > -1) {
         return false
-      } else if (route.path.indexOf('{model}') > -1) {
+      }
+      else if (route.path.indexOf('{model}') > -1) {
         return false
       }
       return true
@@ -1613,10 +1614,15 @@ module.exports = class SwaggerService extends Service {
             tags: [tag]
           }
           if (route.config && route.config.plugins && route.config.plugins.swagger) {
-            paths[path][method] = Object.assign({}, paths[path][method], route.config.plugins.swagger)
+            paths[path][method] = Object.assign(
+              {},
+              paths[path][method],
+              route.config.plugins.swagger
+            )
           }
         })
-      } else {
+      }
+      else {
         const method = route.method.toLowerCase()
         if (!paths[path]) paths[path] = {}
         paths[path][method] = {
