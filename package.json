@@ -21,9 +21,11 @@
   "dependencies": {
     "faker": "^4.1.0",
     "i": "^0.3.5",
+    "lodash": "^4.17.4",
     "object-path": "^0.11.4",
     "pluralize": "^6.0.0",
-    "trailpack": "^2.1.0"
+    "trailpack": "^2.1.0",
+    "trails": "latest"
   },
   "devDependencies": {
     "chai": "^4.1.0",
@@ -33,15 +35,13 @@
     "eslint-plugin-markdown": "^1.0.0-beta.6",
     "eslint-plugin-mocha": "^4.11.0",
     "express": "^4.15.3",
-    "lodash": "^4.17.4",
     "mocha": "^3.4.2",
     "sails-memory": "^0.10.7",
     "smokesignals": "^3.0.3",
     "trailpack-core": "^2.0.0",
     "trailpack-express": "^2.0.3",
     "trailpack-router": "3.0.1",
-    "trailpack-waterline": "^1.0.0-beta-1",
-    "trails": "latest"
+    "trailpack-waterline": "^1.0.0-beta-1"
   },
   "scripts": {
     "eslint": "./node_modules/.bin/eslint .",
