@@ -34,7 +34,7 @@
     "eslint-plugin-mocha": "^4.11.0",
     "express": "^4.15.3",
     "lodash": "^4.17.4",
-    "mocha": "^3.4.2",
+    "mocha": "^6.0.1",
     "sails-memory": "^0.10.7",
     "smokesignals": "^3.0.3",
     "trailpack-core": "^2.0.0",
